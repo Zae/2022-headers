@@ -3,6 +3,9 @@
 </template>
 
 <script>
+import { uniqueId } from 'lodash-es';
+const grids = [];
+
 export default {
     props: {
         mask: {
@@ -12,11 +15,22 @@ export default {
     },
     data() {
         return {
-            grid: [],
+            id: uniqueId(),
             current: 0
         };
     },
+    created() {
+        this.grid = [];
+    },
     computed: {
+        grid: {
+            get() {
+                return grids[this.id];
+            },
+            set(value) {
+                grids[this.id] = value;
+            }
+        },
         height() {
             return this?.mask?.length ?? 0;
         },
@@ -55,31 +69,35 @@ export default {
             }
         },
         run() {
-            for (let y = 0; y < this.grid[this.current].length; y++) {
-                for (let x = 0; x < this.grid[this.current][y].length; x++) {
+            const grid = this.grid;
+            const current = this.current;
+            const next = this.next;
+            const ctx = this.ctx;
+
+            for (let y = 0; y < grid[current].length; y++) {
+                for (let x = 0; x < grid[current][y].length; x++) {
                     if (this.mask[y][x]) {
                         const n = this.neighbours(y, x);
 
-                        if (this.grid[this.current][y][x]) {
+                        if (grid[current][y][x]) {
                             if (n < 2 || n > 3) {
-                                this.grid[this.next][y][x] = 0;
-                                this.ctx.clearRect(x, y, 1, 1);
+                                grid[next][y][x] = 0;
+                                ctx.clearRect(x, y, 1, 1);
                             } else {
-                                this.grid[this.next][y][x] = 1;
-                                this.ctx.fillRect(x, y, 1, 1);
+                                grid[next][y][x] = 1;
+                                ctx.fillRect(x, y, 1, 1);
                             }
                         } else {
                             if (n === 3) {
-                                this.grid[this.next][y][x] = 1;
-                                this.ctx.fillRect(x, y, 1, 1);
+                                grid[next][y][x] = 1;
+                                ctx.fillRect(x, y, 1, 1);
                             } else {
-                                this.grid[this.next][y][x] = 0;
-                                this.ctx.clearRect(x, y, 1, 1);
+                                grid[next][y][x] = 0;
+                                ctx.clearRect(x, y, 1, 1);
                             }
                         }
                     } else {
-                        this.grid[this.next][y][x] = 0;
-                        this.ctx.clearRect(x, y, 1, 1);
+                        grid[next][y][x] = 0;
                     }
                 }
             }
@@ -87,14 +105,17 @@ export default {
             this.current = this.current === 1 ? 0 : 1;
         },
         neighbours(y, x) {
-            return (this.grid[this.current]?.[y - 1]?.[x - 1] ?? 0) +
-                (this.grid[this.current]?.[y]?.[x - 1] ?? 0) +
-                (this.grid[this.current]?.[y + 1]?.[x - 1] ?? 0) +
-                (this.grid[this.current]?.[y - 1]?.[x] ?? 0) +
-                (this.grid[this.current]?.[y + 1]?.[x] ?? 0) +
-                (this.grid[this.current]?.[y - 1]?.[x + 1] ?? 0) +
-                (this.grid[this.current]?.[y]?.[x + 1] ?? 0) +
-                (this.grid[this.current]?.[y + 1]?.[x + 1] ?? 0);
+            const grid = this.grid;
+            const current = this.current;
+
+            return (grid[current]?.[y - 1]?.[x - 1] ?? 0) +
+                (grid[current]?.[y]?.[x - 1] ?? 0) +
+                (grid[current]?.[y + 1]?.[x - 1] ?? 0) +
+                (grid[current]?.[y - 1]?.[x] ?? 0) +
+                (grid[current]?.[y + 1]?.[x] ?? 0) +
+                (grid[current]?.[y - 1]?.[x + 1] ?? 0) +
+                (grid[current]?.[y]?.[x + 1] ?? 0) +
+                (grid[current]?.[y + 1]?.[x + 1] ?? 0);
         },
         createGrid(h, w) {
             const grid = new Array(h);
